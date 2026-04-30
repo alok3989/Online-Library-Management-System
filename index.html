@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next-Gen Library | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="left-panel">
+            <div class="brand-header">
+                <i class="fa-solid fa-book-open-reader logo-icon"></i>
+                <span class="brand-name">LibraTech</span>
+            </div>
+            
+            <div class="hero-content">
+                <h1 class="fade-in">Unlock Knowledge<br>on Demand.</h1>
+                <p class="fade-in delay-1">The future of your campus library starts here. Access thousands of digital resources, track real-time inventory, and manage your research—anytime, anywhere.</p>
+                
+                <div class="feature-pills fade-in delay-2">
+                    <span class="pill"><i class="fa-solid fa-check"></i> 24/7 Access</span>
+                    <span class="pill"><i class="fa-solid fa-check"></i> Smart Search</span>
+                </div>
+            </div>
+
+            <div class="decorative-circle"></div>
+        </div>
+
+        <div class="right-panel">
+            <div class="login-card slide-up">
+                <div class="login-header">
+                    <h2>Welcome Back</h2>
+                    <p>Please enter your details to sign in.</p>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <div class="input-group">
+                        <label for="member-id">Member ID</label>
+                        <input type="text" id="member-id" placeholder="e.g. admin" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="e.g. password123" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkmark"></span>
+                            Keep me logged in
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        Sign In <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Don't have an account? <a href="#">Contact Admin</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

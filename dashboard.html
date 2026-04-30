@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Next-Gen Library</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="logo">
+            <span><i class="fa-solid fa-book-open-reader logo-icon" style="margin-right: 8px;"></i> LibraTech</span>
+            <button id="closeSidebar" class="close-sidebar d-desktop-none"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="nav-item active" data-target="view-dashboard"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="#" class="nav-item" data-target="view-catalog"><i class="fa-solid fa-magnifying-glass"></i> Catalog</a></li>
+            <li><a href="#" class="nav-item" data-target="view-issued"><i class="fa-solid fa-bookmark"></i> My Issued Books</a></li>
+            <li><a href="#" class="nav-item" data-target="view-fines"><i class="fa-solid fa-file-invoice-dollar"></i> Fines</a></li>
+            <li><a href="#" class="nav-item" data-target="view-kiosk"><i class="fa-solid fa-camera-retro"></i> Smart Return Kiosk</a></li>
+            <!-- Admin Only Links -->
+            <li class="admin-only"><a href="#" class="nav-item" data-target="view-admin-requests"><i class="fa-solid fa-bell"></i> Requests</a></li>
+            <li class="admin-only"><a href="#" class="nav-item" data-target="view-admin-inventory"><i class="fa-solid fa-boxes-stacked"></i> Inventory Mgmt</a></li>
+            <li class="admin-only"><a href="#" class="nav-item" data-target="view-admin-transactions"><i class="fa-solid fa-list-check"></i> Global History</a></li>
+        </ul>
+        <ul class="nav-links" style="justify-content: flex-end;">
+            <li><a href="#" id="logoutBtn" style="color: var(--danger);"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <button id="menuToggle" class="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                <h1 id="page-title"><span id="dynamic-greeting">Welcome back</span>, <span id="user-display-name">User</span>!</h1>
+            </div>
+            
+            <div class="user-actions">
+                <button id="themeToggle" class="icon-btn" title="Toggle Dark Mode"><i class="fa-solid fa-moon"></i></button>
+                <div class="user-profile">
+                    <span class="hide-mobile" id="user-profile-name">User</span>
+                    <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=2563EB&color=fff" alt="User">
+                </div>
+            </div>
+        </header>
+
+        <section id="view-dashboard" class="content-section active slide-up">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Books Issued</h3>
+                    <div class="value" id="stat-issued"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;color:var(--text-muted)"></i></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Overdue Books</h3>
+                    <div class="value" id="stat-overdue" style="color: var(--danger);"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;color:var(--text-muted)"></i></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Fines</h3>
+                    <div class="value" id="stat-fines"><i class="fa-solid fa-spinner fa-spin" style="font-size:1rem;color:var(--text-muted)"></i></div>
+                </div>
+            </div>
+
+            <!-- Admin Alert Widget -->
+            <div id="admin-forecaster-card" class="stat-card admin-only" style="display:none; background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(37,99,235,0.05)); border: 1px solid var(--primary); margin-bottom: 24px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <i class="fa-solid fa-chart-line fa-2x" style="color:var(--primary)"></i>
+                    <div>
+                        <h3 style="margin:0; font-size:1.1rem;">Demand Forecaster</h3>
+                        <p id="forecaster-msg" style="margin:4px 0 0 0; color:var(--text-muted); font-size:0.9rem;">Analyzing library trends...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-bar fade-in delay-1">
+                <i class="fa-solid fa-search" style="color: var(--text-muted);"></i>
+                <input type="text" placeholder="Quick search books...">
+            </div>
+
+            <h2 class="section-title fade-in delay-1">Recommended for You</h2>
+            <div class="book-grid fade-in delay-2" id="dashboard-book-grid">
+                <div class="loading-placeholder" style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top:12px;">Loading catalog...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-catalog" class="content-section">
+            <div class="search-bar">
+                <i class="fa-solid fa-search" style="color: var(--text-muted);"></i>
+                <input type="text" id="catalog-search" placeholder="Search entire catalog by title, author, ISBN...">
+            </div>
+            <div class="filter-row" style="margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <select class="custom-select" id="catalog-category-filter">
+                    <option value="">All Categories</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="AI & ML">AI &amp; ML</option>
+                    <option value="Web Development">Web Development</option>
+                </select>
+                <select class="custom-select" id="catalog-format-filter">
+                    <option value="">Show All</option>
+                    <option value="available">Available Only</option>
+                    <option value="digital">E-Books Only</option>
+                </select>
+            </div>
+            <div class="book-grid" id="catalog-book-grid">
+                <div class="loading-placeholder" style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top:12px;">Loading catalog...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-issued" class="content-section">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Book Title</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="issued-table-body">
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">
+                                <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                                <p style="margin-top:12px;">Loading your issued books...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-fines" class="content-section">
+            <div style="background: var(--bg-panel); padding: 24px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 class="section-title" style="margin:0;">Outstanding Balance</h2>
+                    <p id="fine-amount-display" style="font-size: 2rem; font-weight: 700; color: var(--danger); margin: 8px 0;">₹0.00</p>
+                </div>
+                <button id="btn-pay-fine" class="btn-login" style="width: auto; padding: 12px 32px;">Pay All Fines</button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Book Title</th>
+                            <th>ISBN</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Fine</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fines-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-kiosk" class="content-section">
+            <div class="kiosk-container">
+                <div class="kiosk-card kiosk-camera-card">
+                    <div class="kiosk-card-header">
+                        <i class="fa-solid fa-video"></i>
+                        <span>Live Camera Feed</span>
+                    </div>
+                    <div class="kiosk-video-wrapper" id="kiosk-video-wrapper">
+                        <video id="kiosk-video" autoplay playsinline></video>
+                        <canvas id="kiosk-canvas" style="display:none;"></canvas>
+                        <div class="kiosk-video-placeholder" id="kiosk-placeholder">
+                            <i class="fa-solid fa-camera fa-3x"></i>
+                            <p>Camera will activate when you enter this view</p>
+                        </div>
+                        <div class="kiosk-scan-overlay" id="kiosk-scan-overlay">
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                    <button id="kiosk-scan-btn" class="btn-login" style="margin-top: 16px;">
+                        <i class="fa-solid fa-barcode"></i> Scan Book Cover
+                    </button>
+                </div>
+
+                <div class="kiosk-card kiosk-status-card">
+                    <div class="kiosk-card-header">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span>OCR Engine Status</span>
+                    </div>
+                    <div id="kiosk-status" class="kiosk-status">
+                        <div class="kiosk-status-idle">
+                            <i class="fa-solid fa-circle-info fa-2x" style="color: var(--primary);"></i>
+                            <p>Point your camera at a book cover and click <strong>"Scan"</strong>.<br>The OCR engine will extract the ISBN automatically.</p>
+                        </div>
+                    </div>
+
+                    <div class="kiosk-divider">
+                        <span>OR USE MANUAL OVERRIDE</span>
+                    </div>
+
+                    <div class="kiosk-manual">
+                        <div class="kiosk-manual-row">
+                            <input type="text" id="kiosk-manual-isbn" class="kiosk-manual-input" placeholder="Enter ISBN (e.g. 978-0-262-03384-8)">
+                            <button id="kiosk-manual-btn" class="btn-sm btn-primary" style="padding: 10px 20px; white-space: nowrap;">Manual Return</button>
+                        </div>
+                    </div>
+
+                    <div id="kiosk-extracted-text" class="kiosk-extracted-text" style="display:none;">
+                        <div class="kiosk-card-header" style="margin-bottom:8px;">
+                            <i class="fa-solid fa-file-lines"></i>
+                            <span>Extracted Text</span>
+                        </div>
+                        <pre id="kiosk-raw-text"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-admin-requests" class="content-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 class="section-title" style="margin:0;">Pending Requests</h2>
+                <button class="btn-sm btn-outline" onclick="loadAdminRequests()"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Book Title</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-requests-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-admin-inventory" class="content-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap:12px;">
+                <h2 class="section-title" style="margin:0;">Inventory Management</h2>
+                <button class="btn-primary" onclick="openAddBookModal()"><i class="fa-solid fa-plus"></i> Add New Book</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ISBN</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Format</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-inventory-table">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-admin-transactions" class="content-section">
+            <h2 class="section-title">Global Transaction History</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Book Title</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-transactions-table">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <!-- AI Chat Widget -->
+    <button id="chatToggleBtn" class="chat-fab" title="LibraTech AI Tutor">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+    </button>
+
+    <div id="chatWindow" class="chat-window">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <i class="fa-solid fa-robot" style="font-size: 1.1rem;"></i>
+                <span>LibraTech AI</span>
+            </div>
+            <button id="chatCloseBtn" class="chat-close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-bubble bot-bubble">
+                <strong>Hi! I'm your AI Academic Tutor 🎓</strong><br>
+                Ask me to summarize a chapter, explain an algorithm, or recommend a book!
+            </div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Ask me anything academic..." autocomplete="off">
+            <button id="chatSendBtn" class="chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Add Book Modal -->
+    <div id="addBookModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content slide-up">
+            <div class="modal-header">
+                <h3>Add New Book</h3>
+                <button class="icon-btn" onclick="closeAddBookModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="addBookForm" class="modal-body">
+                <div class="input-group">
+                    <label>ISBN</label>
+                    <input type="text" id="add-isbn" placeholder="e.g. 978-0132350884" required>
+                </div>
+                <div class="input-group">
+                    <label>Title</label>
+                    <input type="text" id="add-title" placeholder="Book Title" required>
+                </div>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="add-category" class="custom-select" style="width:100%">
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Software Engineering">Software Engineering</option>
+                        <option value="AI & ML">AI & ML</option>
+                        <option value="Web Development">Web Development</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Format</label>
+                    <select id="add-format" class="custom-select" style="width:100%">
+                        <option value="physical">Physical Copy</option>
+                        <option value="digital">Digital E-Book</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-login" style="margin-top:20px;">Add to Inventory</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
