@@ -18,10 +18,10 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="LibraTech API - Phase 2")
 
 # Configure CORS for production and development
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:8000")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=[FRONTEND_URL] if FRONTEND_URL != "*" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
