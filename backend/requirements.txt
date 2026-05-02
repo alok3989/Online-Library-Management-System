@@ -7,4 +7,4 @@ passlib[bcrypt]
 groq
 pydantic
 python-dotenv
-tesseract
+psycopg2-binary
