@@ -1,5 +1,5 @@
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+    ? `http://localhost:8000`
     : 'https://libratech-backend-kcnv.onrender.com';
 
 // --- Utility: Get auth headers ---
