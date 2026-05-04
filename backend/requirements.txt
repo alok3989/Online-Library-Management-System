@@ -9,3 +9,4 @@ pydantic
 python-dotenv
 psycopg2-binary
 PyJWT
+alembic

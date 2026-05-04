@@ -41,26 +41,41 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 def startup_event():
     db = get_db().__next__()
     try:
-        # Check if database is empty (no users)
-        user_count = db.query(models.User).count()
-        if user_count == 0:
-            print("Database empty! Running auto-seed for production...")
-            from security import get_password_hash
-            
-            # Admin
+        from security import get_password_hash
+        
+        # 1. Ensure Admin exists
+        admin = db.query(models.User).filter(models.User.name == "admin").first()
+        if not admin:
             admin = models.User(user_id="u-admin-001", name="admin", password_hash=get_password_hash("password123"), role=models.RoleEnum.admin)
-            # Student
-            student = models.User(user_id="u-student-001", name="student", password_hash=get_password_hash("student123"), role=models.RoleEnum.student)
-            db.add_all([admin, student])
-            
-            # Sample Books
+            db.add(admin)
+            print("Admin created.")
+
+        # 2. Ensure Students exist
+        students_data = [
+            ("student", "student123", "u-student-001"),
+            ("alok", "alok123", "u-student-002"),
+            ("rahul", "rahul123", "u-student-003"),
+            ("priya", "priya123", "u-student-004"),
+        ]
+        
+        for name, pwd, uid in students_data:
+            existing = db.query(models.User).filter(models.User.name == name).first()
+            if not existing:
+                new_user = models.User(user_id=uid, name=name, password_hash=get_password_hash(pwd), role=models.RoleEnum.student)
+                db.add(new_user)
+                print(f"Student {name} created.")
+
+        # 3. Ensure Sample Books exist if catalog is empty
+        if db.query(models.Book).count() == 0:
             books = [
                 models.Book(isbn="978-0-262-03384-8", title="Introduction to Algorithms", category="Computer Science", format=models.FormatEnum.physical),
                 models.Book(isbn="978-0-13-235088-4", title="Computer Networks", category="Computer Science", format=models.FormatEnum.physical)
             ]
             db.add_all(books)
-            db.commit()
-            print("Auto-seed complete.")
+            print("Sample books seeded.")
+            
+        db.commit()
+        print("Startup sync complete.")
     except Exception as e:
         print(f"Startup seed error: {e}")
     finally:
@@ -161,12 +176,48 @@ def login_for_access_token(request: LoginRequest, db: Session = Depends(get_db))
     # Note: For prototype simplicity, matching member_id with name
     user = db.query(models.User).filter(models.User.name == request.member_id).first()
 
-    # Verify password using bcrypt
-    if not user or not verify_password(request.password, user.password_hash):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Credentials!",
         )
+
+    # Check if user is locked out
+    if user.lockout_until:
+        if user.lockout_until > datetime.utcnow():
+            remaining_time = user.lockout_until - datetime.utcnow()
+            hours, remainder = divmod(remaining_time.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Account blocked for 24 hours due to 2 failed attempts. Please contact admin.",
+            )
+        else:
+            # Lockout period expired, reset attempts for a fresh start
+            user.failed_login_attempts = 0
+            user.lockout_until = None
+            db.commit()
+
+    # Verify password using bcrypt
+    if not verify_password(request.password, user.password_hash):
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= 2:
+            user.lockout_until = datetime.utcnow() + timedelta(hours=24)
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Too many failed attempts. Account blocked for 24 hours. Contact admin.",
+            )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Credentials! (Attempt {user.failed_login_attempts}/2)",
+        )
+
+    # Success: Reset failed attempts and lockout
+    user.failed_login_attempts = 0
+    user.lockout_until = None
+    db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

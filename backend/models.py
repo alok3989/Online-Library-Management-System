@@ -32,6 +32,8 @@ class User(Base):
     name = Column(String, nullable=False)
     password_hash = Column(String, nullable=False) # Adding for Phase 1 Authentication
     trust_score = Column(Integer, default=100)
+    failed_login_attempts = Column(Integer, default=0)
+    lockout_until = Column(DateTime, nullable=True)
 
 class Book(Base):
     __tablename__ = 'books'
