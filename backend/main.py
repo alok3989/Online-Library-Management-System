@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -430,7 +436,21 @@ Rules:
 - If you don't know something, say so honestly
 """
 
+# Try to initialize Gemini client
+gemini_model = None
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+try:
+    if GEMINI_API_KEY:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=LIBRATECH_SYSTEM_PROMPT
+        )
+        print("✅ LibraTech AI Tutor: GEMINI LIVE MODE ACTIVE")
+except Exception as e:
+    print(f"⚠️ LibraTech AI Tutor: Gemini Initialization Failed (Reason: {e})")
 
 # Try to initialize Groq client
 groq_client = None
@@ -442,8 +462,7 @@ try:
         groq_client = Groq(api_key=GROQ_API_KEY)
         print("✅ LibraTech AI Tutor: GROQ LIVE MODE ACTIVE")
 except Exception as e:
-    print(f"⚠️ LibraTech AI Tutor: OFFLINE MODE (Reason: {e})")
-    groq_client = None
+    print(f"⚠️ LibraTech AI Tutor: Groq Initialization Failed (Reason: {e})")
 
 
 OFFLINE_RESPONSES = {
@@ -474,7 +493,7 @@ async def chat_with_ai(
     if not user_message:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
-    # Try Groq API if available
+    # 1. Try Groq API
     if groq_client:
         try:
             target_model = "llama-3.3-70b-versatile"
@@ -489,10 +508,18 @@ async def chat_with_ai(
             return {"reply": chat_completion.choices[0].message.content}
         except Exception as e:
             print(f"❌ Groq Generation Failed: {e}")
-            # Return error to UI for testing
-            return {"reply": f"🤖 AI Error (Groq): {str(e)}"}
+            # Don't return yet, try Gemini next
 
-    # Offline fallback
+    # 2. Try Gemini API
+    if gemini_model:
+        try:
+            print("DEBUG: Attempting Gemini AI generation")
+            response = gemini_model.generate_content(user_message)
+            return {"reply": response.text}
+        except Exception as e:
+            print(f"❌ Gemini Generation Failed: {e}")
+
+    # 3. Offline fallback
     return {"reply": get_offline_response(user_message)}
 
 # --- ADMIN ENDPOINTS ---
